@@ -16,10 +16,8 @@ public class CreatePatternList_Inact {
 	//データフォルダパス
 	static String DataFolderPath = "Files/Data/";
 
-	//出力する記述パターンのリストのファイル名
+	//出力用ファイル名
 	static String OutputFileName = "PatternList_Inact.txt";
-	//置換できなかった添加物一覧を出力するファイル名
-	static String outputfilename = "NotReplaceInactIngreNameList.txt";
 	//出力用フォルダのパス
 	static String Path = "Files/CP_I/";
 
@@ -47,10 +45,8 @@ public class CreatePatternList_Inact {
 		CreateLabel_InactIngre CL_II = new CreateLabel_InactIngre(TextList, YJList);
 		CL_II.CreatePatternActiveIngreandUnit();
 		ArrayList<String> OutPut = CL_II.getReplaceAfterTextArray();
-		ArrayList<String> output = CL_II.getNotReplaceWordList();
 
 		InOutFile.OutputText(OutputFileName, Path, OutPut);
-		InOutFile.OutputText(outputfilename, Path, output);
 
 
 	}
