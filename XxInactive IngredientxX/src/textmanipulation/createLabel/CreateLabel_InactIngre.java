@@ -72,6 +72,9 @@ public class CreateLabel_InactIngre {
 	//置換後テキスト配列
 	private ArrayList<String> ReplacementAfterTextArray = new ArrayList<String>();
 
+	//置換出来なかった文字列格納用テキスト配列
+	private ArrayList<String> NotReplaceInactIngreName = new ArrayList<String>();
+
 
 
 
@@ -161,11 +164,11 @@ public class CreateLabel_InactIngre {
 
 
 		//対象語句(添加物以外)
-		String[] TargetWordList = {	"添加剤",		"賦形剤",		"基剤",			"安定剤",
-									"等張化剤",		"緩衝剤",		"添付溶解液",
-									"溶剤",			"溶解液",		"専用希釈液",	"免疫補助剤",	"矯味剤",
-									"張化剤",		"専用溶解液",	"添付溶剤"
-		};
+//		String[] TargetWordList = {	"添加剤",		"賦形剤",		"基剤",			"安定剤",
+//									"等張化剤",		"緩衝剤",		"添付溶解液",
+//									"溶剤",			"溶解液",		"専用希釈液",	"免疫補助剤",	"矯味剤",
+//									"張化剤",		"専用溶解液",	"添付溶剤"
+//		};
 
 		//添加物以外の情報である語句
 		String[] OutTargetWordList = { "備考", "電解質量", "有効成分"
@@ -322,6 +325,11 @@ public class CreateLabel_InactIngre {
 				TargetText = TargetText.replaceAll(DeleteSymbolList[j], "");
 			}
 
+
+			//添加物が上手く置換できていない語句を確認するためのメソッド
+			ConfirmReplaceLabel(TargetText, "<InactIngreName>", TargetYJ);
+
+
 			//Step.8
 			//区切り文字の削除
 			TargetText = TargetText.replaceAll("、", "");
@@ -352,7 +360,6 @@ public class CreateLabel_InactIngre {
 			TargetText = TargetText.replaceAll("＜ＢＲ＞", "<BR>");
 
 
-
 			//出力用に格納
 			ReplacementAfterTextArray.add(TargetYJ + "\t" + TargetText);
 
@@ -368,34 +375,67 @@ public class CreateLabel_InactIngre {
 
 
 
+//	/**
+//	 * ラベル作成時の不要部分探索・削除用\n
+//	 * 添加物等の不要語句に対して、残りの<BR>部分までを削除するために、その部分を探索して部分文字列を作成し、削除
+//	 * @param 削除対象TEXT, 不要語句開始Index
+//	 * @return 不要部分削除済みTEXT
+//	 */
+//	private String SearchDeletePart(String TargetText, int fromindex){
+//		int lastindex;
+//
+//		//該当部分の最後を探索
+//		//該当部分を探索 +2となっているのは開始部分と終わりの部分を一致させないため
+//		if((lastindex = TargetText.indexOf("＜＜ＢＲ＞＞", fromindex+2)) != -1){
+//			//＜＜ＢＲ＞＞も削除するために調整
+//			lastindex += 5;
+//		}
+//		//見つからなかったら、対象語句以降を全て削除するために、一番最後のIndex番号を取得
+//		else{
+//			lastindex = TargetText.length()-1;
+//		}
+//
+//		//削除部分の文字列を取得
+//		String S = TargetText.substring(fromindex, lastindex);
+//
+//		//削除
+//		TargetText = TargetText.replaceFirst(S, "");
+//
+//
+//		return TargetText;
+//	}
+
+
 	/**
-	 * ラベル作成時の不要部分探索・削除用\n
-	 * 添加物等の不要語句に対して、残りの<BR>部分までを削除するために、その部分を探索して部分文字列を作成し、削除
-	 * @param 削除対象TEXT, 不要語句開始Index
-	 * @return 不要部分削除済みTEXT
+	 * 記述パターンより対象とするラベルが置換されているかを確認するメソッド
+	 * @param 対象とする記述パターン、置換確認対象ラベル(このクラスでは添加物)、対象記述パターンをもつ医薬品のYJコード
 	 */
-	private String SearchDeletePart(String TargetText, int fromindex){
-		int lastindex;
+	public void ConfirmReplaceLabel(String TargetText, String LabelText, String YJ){
 
-		//該当部分の最後を探索
-		//該当部分を探索 +2となっているのは開始部分と終わりの部分を一致させないため
-		if((lastindex = TargetText.indexOf("＜＜ＢＲ＞＞", fromindex+2)) != -1){
-			//＜＜ＢＲ＞＞も削除するために調整
-			lastindex += 5;
+		//対象の記述パターンよりラベルを消したものを格納
+		String Temp = TargetText.replaceAll(LabelText, "");
+
+		//＜＜ＢＲ＞＞によって分割
+		String[] TempArray = Temp.split("＜＜ＢＲ＞＞", -1);
+
+		//区切り文字ごとに対象ラベルを削除し、文字が残るか判定
+		for(int i=0; i<TempArray.length; i++){
+
+			//＜ＢＲ＞以前を削除
+			int Index;
+			if((Index = TempArray[i].indexOf("＜ＢＲ＞")) != -1){
+				TempArray[i] = TempArray[i].substring(Index+3);
+			}
+			//更に区切り文字によって分割を行う(たいていは読点なので「、」を使用)
+			String temparray[] = TempArray[i].split("、", -1);
+
+			for(int j=0; j<temparray.length; j++){
+				//区切り文字によって分割された文字列のうち、ラベルのみになっていない文字列をリターン用配列に格納
+				if(temparray[j].replaceFirst(LabelText, "").length() != 0){
+					NotReplaceInactIngreName.add(YJ + "\t" + temparray[j]);
+				}
+			}
 		}
-		//見つからなかったら、対象語句以降を全て削除するために、一番最後のIndex番号を取得
-		else{
-			lastindex = TargetText.length()-1;
-		}
-
-		//削除部分の文字列を取得
-		String S = TargetText.substring(fromindex, lastindex);
-
-		//削除
-		TargetText = TargetText.replaceFirst(S, "");
-
-
-		return TargetText;
 	}
 
 	/**
@@ -403,6 +443,12 @@ public class CreateLabel_InactIngre {
 	 */
 	public ArrayList<String>getReplaceAfterTextArray(){
 		return ReplacementAfterTextArray;
+	}
+	/**
+	 * get置換出来なかった添加物
+	 */
+	public ArrayList<String> getNotReplaceWordList(){
+		return NotReplaceInactIngreName;
 	}
 
 
